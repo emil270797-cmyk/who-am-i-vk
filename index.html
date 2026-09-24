@@ -6,10 +6,11 @@
     <title>Кто я? — Игра</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- ПОДКЛЮЧЕНИЕ БАЗЫ СЛОВ -->
+    <!-- ПОДКЛЮЧЕНИЕ БАЗЫ СЛОВ (генерируется Python скриптом) -->
     <script src="words.js"></script>
     
     <style>
+        /* Блокируем свайпы, выделение текста и зум */
         body { 
             touch-action: none; 
             user-select: none; 
@@ -19,6 +20,7 @@
         .screen { display: none; }
         .screen.active { display: flex; }
         
+        /* Вспышки правильного/неправильного ответа */
         .flash-overlay { 
             position: absolute; 
             inset: 0; 
@@ -45,7 +47,7 @@
     <div id="loading-screen" class="screen active flex-col items-center justify-center h-full w-full p-6 text-center">
         <h2 class="text-3xl font-bold text-blue-400 animate-pulse">Загрузка игры...</h2>
         <p id="loading-error" class="text-red-400 mt-4 hidden bg-red-900/30 p-4 rounded-xl">
-            Ошибка: Не удалось загрузить базу слов.<br>Убедитесь, что файл <b>words.js</b> находится в той же папке.
+            Ошибка: Не удалось загрузить базу слов.<br>Используется встроенная демо-версия.
         </p>
     </div>
 
@@ -64,7 +66,7 @@
                 <button id="btn-mode-endless" onclick="setGameMode('endless')" class="flex-1 bg-transparent py-3 px-4 rounded-xl font-bold text-gray-400 transition text-sm md:text-base">Без времени</button>
             </div>
             
-            <!-- Сообщение об ошибке (вместо alert) -->
+            <!-- Уведомление об ошибке категории -->
             <div id="category-error" class="text-red-400 mt-4 hidden text-sm font-bold bg-red-900/40 px-4 py-2 rounded-xl">
                 Слова для этой категории не найдены.
             </div>
@@ -75,6 +77,8 @@
             <button onclick="startGame('base')" class="bg-blue-500 hover:bg-blue-400 active:bg-blue-600 py-4 landscape:py-5 rounded-2xl text-xl font-bold shadow-lg transition-colors">Базовая (Микс)</button>
             <button onclick="startGame('movies')" class="bg-fuchsia-500 hover:bg-fuchsia-400 active:bg-fuchsia-600 py-4 landscape:py-5 rounded-2xl text-xl font-bold shadow-lg transition-colors">Кино и Сериалы</button>
             <button onclick="startGame('sport')" class="bg-green-500 hover:bg-green-400 active:bg-green-600 py-4 landscape:py-5 rounded-2xl text-xl font-bold shadow-lg transition-colors">Спорт</button>
+            <button onclick="startGame('auto')" class="bg-red-500 hover:bg-red-400 active:bg-red-600 py-4 landscape:py-5 rounded-2xl text-xl font-bold shadow-lg transition-colors">Автомобили</button>
+            <button onclick="startGame('it')" class="bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 py-4 landscape:py-5 rounded-2xl text-xl font-bold shadow-lg transition-colors">IT и Разработка</button>
         </div>
     </div>
 
@@ -115,7 +119,7 @@
     </div>
 
     <div id="result-screen" class="screen flex-col items-center justify-center h-full w-full p-6 text-center relative z-50 bg-[#1a202c]">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4 text-white">Игра завершена!</h2>
+        <h2 id="result-title" class="text-4xl md:text-5xl font-bold mb-4 text-white">Время вышло!</h2>
         <p class="text-gray-400 mb-6 text-lg">Количество угаданных слов:</p>
         <div class="bg-gray-800 border border-gray-700 rounded-3xl p-8 mb-10 w-full max-w-sm flex justify-center shadow-xl landscape:p-6 landscape:mb-6">
             <div class="text-8xl landscape:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-cyan-500" id="final-score">0</div>
@@ -125,8 +129,11 @@
 
     <script>
         let activeDatabases = {}; 
-        let currentMode = 'timed'; 
-        let currentDeck = [];
+        let activeDecks = {}; // Здесь хранятся текущие невыпавшие слова
+        let
+
+
+currentMode = 'timed'; 
         let score = 0;
         let timeRemaining = 60;
         let timerInterval = null;
@@ -153,27 +160,30 @@
             tapLeft: document.getElementById('tap-left'),
             tapRight: document.getElementById('tap-right'),
             btnFinish: document.getElementById('btn-finish'),
-            flashEffect: document.getElementById('flash-effect')
+            flashEffect: document.getElementById('flash-effect'),
+            resultTitle: document.getElementById('result-title')
         };
 
         window.onload = () => {
+            // Проверка подгрузился ли words.js
             const db = window.databases || window.loadedDatabases;
             
             if (db && Object.keys(db).length > 0) {
                 activeDatabases = db;
+                // Страховка на случай отсутствия базовых категорий
                 if (!activeDatabases['base']) activeDatabases['base'] = ["Собака", "Кошка", "Дом", "Машина", "Дерево", "Гитара"];
-                if (!activeDatabases['sport']) activeDatabases['sport'] = ["Футбол", "Хоккей", "Теннис", "Бокс"];
-                
                 switchScreen('menu');
             } else {
-                console.error("База слов не найдена. Проверьте файл words.js");
+                console.warn("База слов не найдена. Запускаем демо-версию.");
                 ui.errorMsg.classList.remove('hidden');
                 
-                // Fallback демо-колода
+                // Fallback (Запасная) демо-колода
                 activeDatabases = {
-                    'base': ["Собака", "Кошка", "Дом", "Машина"],
-                    'movies': ["Матрица", "Аватар", "Шрек"],
-                    'sport': ["Футбол", "Хоккей", "Теннис"]
+                    'base': ["Собака", "Кошка", "Дом", "Машина", "Самолет", "Ролики", "Дерево"],
+                    'movies': ["Матрица", "Аватар", "Шрек", "Мстители", "Терминатор"],
+                    'sport': ["Футбол", "Хоккей", "Теннис", "Баскетбол", "Бокс"],
+                    'auto': ["Двигатель", "Капот", "Бампер", "Руль", "Тормоз"],
+                    'it': ["Сервер", "Код", "Программист", "Мышка", "Клавиатура"]
                 };
                 setTimeout(() => switchScreen('menu'), 2000);
             }
@@ -184,6 +194,7 @@
             screens[screenName].classList.add('active');
         }
 
+        // Классический алгоритм Фишера-Йетса для перемешивания
         function shuffle(array) {
             let currentIndex = array.length, randomIndex;
             while (currentIndex !== 0) {
@@ -206,22 +217,24 @@
         }
 
         function startGame(category) {
-            ui.catErrorMsg.classList.add('hidden'); // Скрываем ошибку, если она была
+            ui.catErrorMsg.classList.add('hidden');
 
             if (!activeDatabases[category] || activeDatabases[category].length === 0) {
-                ui.catErrorMsg.classList.remove('hidden'); // Показываем кастомную UI-ошибку
+                ui.catErrorMsg.classList.remove('hidden');
                 setTimeout(() => ui.catErrorMsg.classList.add('hidden'), 3000);
                 return;
             }
 
             currentCategory = category;
-            currentDeck = shuffle([...activeDatabases[category]]);
             score = 0;
+            
+            // Ставим правильный заголовок для финала
+            ui.resultTitle.innerText = currentMode === 'timed' ? "Время вышло!" : "Игра завершена!";
             
             clearInterval(timerInterval);
             clearInterval(prepInterval);
 
-            // Запуск таймера подготовки
+            // Экран подготовки
             let prepTime = 5;
             ui.prepTimer.innerText = prepTime;
             switchScreen('prep');
@@ -263,11 +276,14 @@
         }
 
         function nextWord() {
-            if (currentDeck.length === 0) {
-                // Зацикливаем колоду, если слова кончились
-                currentDeck = shuffle([...activeDatabases[currentCategory]]);
+            // ИДЕАЛЬНАЯ ЛОГИКА КОЛОДЫ:
+            // Если колода пуста или еще не создана — копируем полную базу и перемешиваем
+            if (!activeDecks[currentCategory] || activeDecks[currentCategory].length === 0) {
+                activeDecks[currentCategory] = shuffle([...activeDatabases[currentCategory]]);
+                console.log(`Колода [${currentCategory}] была перемешана заново!`);
             }
-            ui.word.innerText = currentDeck.pop();
+            // Берем слово. Оно не повторится, пока колода не опустеет снова.
+            ui.word.innerText = activeDecks[currentCategory].pop();
         }
 
         function endGame() {
@@ -300,11 +316,11 @@
         
         const handleFinish = (e) => { 
             e.preventDefault(); 
-            e.stopPropagation(); // Обязательная блокировка всплытия события
+            e.stopPropagation(); // Блокирует пробитие клика на слой tapRight
             endGame(); 
         };
 
-        // Регистрация событий
+        // Биндим события с passive: false для preventDefault
         ui.tapLeft.addEventListener('touchstart', handlePass, { passive: false });
         ui.tapLeft.addEventListener('mousedown', handlePass);
         
@@ -315,4 +331,4 @@
         ui.btnFinish.addEventListener('mousedown', handleFinish);
     </script>
 </body>
-</html>
+</html> transi
