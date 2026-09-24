@@ -1,20 +1,20 @@
 import os
+import glob
+import json
 
-# Сюда мы будем собирать все слова
 databases = {}
 
-# Читаем файл movies.txt
-if os.path.exists('movies.txt'):
-    with open('movies.txt', 'r', encoding='utf-8') as file:
-        # Читаем строки, убираем пробелы, оставляем только непустые
+# РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё РЅР°С…РѕРґРёРј Р’РЎР• С‚РµРєСЃС‚РѕРІС‹Рµ С„Р°Р№Р»С‹ РІ РїР°РїРєРµ
+for filepath in glob.glob("*.txt"):
+    category_name = os.path.splitext(filepath)[0] # РРјСЏ С„Р°Р№Р»Р° СЃС‚Р°РЅРµС‚ ID РєР°С‚РµРіРѕСЂРёРё
+    with open(filepath, 'r', encoding='utf-8') as file:
         words = [line.strip() for line in file if line.strip()]
-        databases['movies'] = words
-        print(f"? Успешно прочитано {len(words)} слов из movies.txt")
-else:
-    print("? Файл movies.txt не найден!")
+        databases[category_name] = words
+        print(f"вњ… Р”РѕР±Р°РІР»РµРЅРѕ {len(words)} СЃР»РѕРІ РёР· {filepath}")
 
-# Создаем файл words.js, который поймет браузер
+# РЎРѕС…СЂР°РЅСЏРµРј РІ JS-С„Р°Р№Р»
 with open('words.js', 'w', encoding='utf-8') as js_file:
-    # Записываем словарь в виде JavaScript переменной
-    js_file.write(f"const databases = {databases};\n")
-    print("? Файл words.js успешно создан!")
+    # json.dumps Р°РєРєСѓСЂР°С‚РЅРѕ РѕР±СЂР°Р±РѕС‚Р°РµС‚ РІСЃРµ РєР°РІС‹С‡РєРё Рё Р·Р°РїСЏС‚С‹Рµ
+    js_data = json.dumps(databases, ensure_ascii=False)
+    js_file.write(f"const databases = {js_data};\n")
+    print("рџљЂ Р¤Р°Р№Р» words.js СѓСЃРїРµС€РЅРѕ СЃРѕР±СЂР°РЅ РёР· РІСЃРµС… СЃР»РѕРІР°СЂРµР№!")
