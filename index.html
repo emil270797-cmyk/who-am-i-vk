@@ -1,129 +1,312 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кто я?</title>
+    <title>Кто я? — Игра</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ПОДКЛЮЧЕНИЕ БАЗЫ СЛОВ -->
+    <!-- Ожидается, что в этом файле есть переменная: const databases = { ... }; -->
+    <script src="words.js"></script>
+    
     <style>
-        body { touch-action: none; user-select: none; -webkit-user-select: none; }
+        body { 
+            touch-action: none; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            overflow: hidden; 
+        }
         .screen { display: none; }
         .screen.active { display: flex; }
-        .flash-green { animation: flashG 0.3s ease-out; }
-        .flash-red { animation: flashR 0.3s ease-out; }
-        @keyframes flashG { 0% { background-color: rgba(34, 197, 94, 0.5); } 100% { background-color: transparent; } }
-        @keyframes flashR { 0% { background-color: rgba(239, 68, 68, 0.5); } 100% { background-color: transparent; } }
+        
+        .flash-overlay { 
+            position: absolute; 
+            inset: 0; 
+            z-index: 5; 
+            pointer-events: none; 
+            opacity: 0; 
+            transition: opacity 0.3s ease-out; 
+        }
+        .flash-green { animation: flashG 0.4s ease-out; }
+        .flash-red { animation: flashR 0.4s ease-out; }
+        
+        @keyframes flashG { 
+            0% { background-color: rgba(34, 197, 94, 0.6); opacity: 1; } 
+            100% { background-color: transparent; opacity: 0; } 
+        }
+        @keyframes flashR { 
+            0% { background-color: rgba(239, 68, 68, 0.6); opacity: 1; } 
+            100% { background-color: transparent; opacity: 0; } 
+        }
     </style>
-    
-    <!-- ПОДКЛЮЧАЕМ НАШУ БАЗУ СЛОВ -->
-    <script src="words.js"></script>
 </head>
-<body class="bg-gray-900 text-white h-screen w-screen overflow-hidden font-sans">
-    
-    <!-- Главное меню -->
-    <div id="menu-screen" class="screen active flex-col items-center justify-center h-full w-full p-6 text-center">
-        <h1 class="text-5xl font-black mb-8 text-blue-400">Кто я?</h1>
+<body class="bg-[#1a202c] text-white h-screen w-screen font-sans relative">
+
+    <div id="loading-screen" class="screen active flex-col items-center justify-center h-full w-full p-6 text-center">
+        <h2 class="text-3xl font-bold text-blue-400 animate-pulse">Загрузка игры...</h2>
+        <p id="loading-error" class="text-red-400 mt-4 hidden bg-red-900/30 p-4 rounded-xl">
+            Ошибка: Не удалось загрузить базу слов.<br>Убедитесь, что файл <b>words.js</b> находится в той же папке.
+        </p>
+    </div>
+
+    <div id="menu-screen" class="screen flex-col items-center justify-center h-full w-full p-6 relative">
+        <h1 class="text-5xl md:text-6xl font-black mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500 tracking-tight">Кто я?</h1>
+        <p class="mb-8 text-gray-300 text-center text-sm md:text-base max-w-sm leading-relaxed">
+            Выбери режим, колоду и приложи телефон ко лбу дисплеем к друзьям.
+        </p>
+        
+        <!-- Переключатель режимов -->
+        <div class="flex justify-center gap-2 mb-8 w-full max-w-sm bg-gray-700/50 p-1.5 rounded-2xl">
+            <button id="btn-mode-timed" onclick="setGameMode('timed')" class="flex-1 bg-gray-500 py-3 rounded-xl font-bold shadow text-white transition">На время (60с)</button>
+            <button id="btn-mode-endless" onclick="setGameMode('endless')" class="flex-1 bg-transparent py-3 rounded-xl font-bold text-gray-400 transition">Без времени</button>
+        </div>
+
+        <!-- Кнопки категорий -->
         <div class="flex flex-col gap-4 w-full max-w-sm">
-            <button onclick="startGame('movies')" class="bg-purple-600 py-4 rounded-2xl text-xl font-bold">Кино и Сериалы</button>
+            <button onclick="startGame('base')" class="bg-blue-500 hover:bg-blue-400 active:bg-blue-600 py-4 rounded-2xl text-xl font-bold shadow-lg transition-colors">Базовая (Микс)</button>
+            <button onclick="startGame('movies')" class="bg-fuchsia-500 hover:bg-fuchsia-400 active:bg-fuchsia-600 py-4 rounded-2xl text-xl font-bold shadow-lg transition-colors">Кино и Сериалы</button>
+            <button onclick="startGame('sport')" class="bg-green-500 hover:bg-green-400 active:bg-green-600 py-4 rounded-2xl text-xl font-bold shadow-lg transition-colors">Спорт</button>
         </div>
     </div>
 
-    <!-- Игровой экран -->
-    <div id="game-screen" class="screen flex-col h-full w-full relative transition-colors duration-200">
-        <!-- Кнопка завершить поверх всего -->
-        <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50 pointer-events-none">
-            <div id="timer" class="text-3xl font-black text-yellow-400 opacity-0"></div> <!-- Таймер скрыт -->
-            <button id="btn-finish" class="text-gray-400 text-lg font-bold bg-gray-800 px-4 py-2 rounded-full pointer-events-auto">Завершить</button>
+    <div id="prep-screen" class="screen flex-col items-center justify-center h-full w-full p-6 text-center">
+        <h2 class="text-3xl md:text-5xl font-bold mb-8 text-cyan-400 drop-shadow-md">Приложи телефон ко лбу!</h2>
+        <div class="bg-gray-800 rounded-full w-48 h-48 flex items-center justify-center shadow-2xl border-4 border-gray-700">
+            <div id="prep-timer" class="text-8xl font-black text-white animate-pulse">5</div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen flex-col h-full w-full relative">
+        <div id="flash-effect" class="flash-overlay"></div>
+        
+        <!-- Невидимые зоны для тапов (z-10) -->
+        <div class="absolute inset-0 flex z-10">
+            <div id="tap-left" class="w-1/2 h-full cursor-pointer"></div>
+            <div id="tap-right" class="w-1/2 h-full cursor-pointer"></div>
         </div>
         
-        <div class="flex-1 flex items-center justify-center z-10 pointer-events-none p-4">
-            <h2 id="current-word" class="text-6xl md:text-8xl font-black text-center break-words leading-tight">Слово</h2>
+        <!-- Верхняя панель: z-50, контейнер прозрачен для кликов, а кнопка - нет -->
+        <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50 pointer-events-none">
+            <div id="timer" class="text-4xl font-black text-yellow-400 drop-shadow-md">60</div>
+            <button id="btn-finish" class="text-gray-200 font-bold bg-gray-800/90 px-5 py-3 rounded-full pointer-events-auto border border-gray-600 shadow-lg active:bg-gray-700 transition">Завершить</button>
         </div>
-
-        <div class="absolute top-0 left-0 w-full h-full flex z-10">
-            <div id="tap-left" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-red-400 font-bold text-xl cursor-pointer">? Пропуск</div>
-            <div id="tap-right" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-green-400 font-bold text-xl cursor-pointer">Угадал ?</div>
+        
+        <!-- Центральное слово -->
+        <div class="flex-1 flex flex-col items-center justify-center z-20 pointer-events-none p-4">
+            <div class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-4">Загаданное слово</div>
+            <h2 id="current-word" class="text-5xl md:text-7xl lg:text-8xl font-black text-center break-words leading-tight text-white px-2 drop-shadow-lg">Слово</h2>
+        </div>
+        
+        <!-- Инструкции внизу экрана -->
+        <div class="absolute bottom-8 w-full flex justify-between px-8 z-0 pointer-events-none text-gray-500/70 font-bold uppercase text-sm">
+            <span>← Пропуск</span>
+            <span>Угадал →</span>
         </div>
     </div>
 
-    <!-- Результаты -->
-    <div id="result-screen" class="screen flex-col items-center justify-center h-full w-full p-6 text-center">
-        <h2 class="text-4xl font-bold mb-4">Конец игры!</h2>
-        <p class="text-gray-400 mb-2">Угадано слов:</p>
-        <div class="text-8xl font-black text-green-400 mb-12" id="final-score">0</div>
-        <button onclick="location.reload()" class="bg-gray-700 py-4 px-8 rounded-2xl text-xl font-bold">В меню</button>
+    <div id="result-screen" class="screen flex-col items-center justify-center h-full w-full p-6 text-center relative z-50 bg-[#1a202c]">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4 text-white">Игра завершена!</h2>
+        <p class="text-gray-400 mb-6 text-lg">Количество угаданных слов:</p>
+        <div class="bg-gray-800 border border-gray-700 rounded-3xl p-10 mb-12 w-full max-w-sm flex justify-center shadow-xl">
+            <div class="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-cyan-500" id="final-score">0</div>
+        </div>
+        <button onclick="showMenu()" class="bg-gray-700 hover:bg-gray-600 active:bg-gray-500 py-4 rounded-2xl text-xl font-bold w-full max-w-sm transition shadow-lg">В главное меню</button>
     </div>
 
     <script>
+        // База слов, которая будет загружена из words.js
+        let activeDatabases = {}; 
+        
+        let currentMode = 'timed'; 
         let currentDeck = [];
         let score = 0;
-        
+        let timeRemaining = 60;
+        let timerInterval = null;
+        let prepInterval = null;
+        let currentCategory = '';
+
+        // Элементы интерфейса
         const screens = {
+            loading: document.getElementById('loading-screen'),
             menu: document.getElementById('menu-screen'),
+            prep: document.getElementById('prep-screen'),
             game: document.getElementById('game-screen'),
             result: document.getElementById('result-screen')
         };
+        
         const ui = {
+            errorMsg: document.getElementById('loading-error'),
+            btnModeTimed: document.getElementById('btn-mode-timed'),
+            btnModeEndless: document.getElementById('btn-mode-endless'),
             word: document.getElementById('current-word'),
+            timer: document.getElementById('timer'),
+            prepTimer: document.getElementById('prep-timer'),
             score: document.getElementById('final-score'),
             tapLeft: document.getElementById('tap-left'),
             tapRight: document.getElementById('tap-right'),
-            gameWrapper: document.getElementById('game-screen'),
-            btnFinish: document.getElementById('btn-finish')
+            btnFinish: document.getElementById('btn-finish'),
+            flashEffect: document.getElementById('flash-effect')
         };
 
-        function switchScreen(name) {
+        window.onload = () => {
+            // Проверяем, загрузилась ли переменная databases или loadedDatabases из words.js
+            const db = window.databases || window.loadedDatabases;
+            
+            if (db && Object.keys(db).length > 0) {
+                activeDatabases = db;
+                // Добавляем fallback (на случай если в words.js нет базовой колоды, а кнопка есть)
+                if (!activeDatabases['base']) activeDatabases['base'] = ["Собака", "Кошка", "Дом", "Машина", "Дерево", "Гитара"];
+                if (!activeDatabases['sport']) activeDatabases['sport'] = ["Футбол", "Хоккей", "Теннис", "Бокс"];
+                
+                switchScreen('menu');
+            } else {
+                console.error("База слов не найдена. Проверьте файл words.js");
+                ui.errorMsg.classList.remove('hidden');
+                
+                // Если файла вообще нет, даем поиграть в демо-версию, чтобы UI не зависал
+                activeDatabases = {
+                    'base': ["Собака", "Кошка", "Дом", "Машина"],
+                    'movies': ["Матрица", "Аватар", "Шрек"],
+                    'sport': ["Футбол", "Хоккей", "Теннис"]
+                };
+                setTimeout(() => switchScreen('menu'), 2000); // Показываем меню через 2 сек
+            }
+        };
+
+        function switchScreen(screenName) {
             Object.values(screens).forEach(s => s.classList.remove('active'));
-            screens[name].classList.add('active');
+            screens[screenName].classList.add('active');
         }
 
         function shuffle(array) {
-            let cur = array.length, rnd;
-            while (cur !== 0) {
-                rnd = Math.floor(Math.random() * cur);
-                cur--;
-                [array[cur], array[rnd]] = [array[rnd], array[cur]];
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
             }
             return array;
         }
 
+        function setGameMode(mode) {
+            currentMode = mode;
+            if (mode === 'timed') {
+                ui.btnModeTimed.className = "flex-1 bg-gray-500 py-3 rounded-xl font-bold shadow text-white transition";
+                ui.btnModeEndless.className = "flex-1 bg-transparent py-3 rounded-xl font-bold text-gray-400 transition";
+            } else {
+                ui.btnModeEndless.className = "flex-1 bg-gray-500 py-3 rounded-xl font-bold shadow text-white transition";
+                ui.btnModeTimed.className = "flex-1 bg-transparent py-3 rounded-xl font-bold text-gray-400 transition";
+            }
+        }
+
         function startGame(category) {
-            // Берем слова из базы, которую сгенерировал Python
-            currentDeck = shuffle([...databases[category]]);
+            if (!activeDatabases[category] || activeDatabases[category].length === 0) {
+                alert("Слова для этой категории пусты!");
+                return;
+            }
+
+            currentCategory = category;
+            currentDeck = shuffle([...activeDatabases[category]]);
             score = 0;
+            
+            clearInterval(timerInterval);
+            clearInterval(prepInterval);
+
+            // Экран подготовки
+            let prepTime = 5;
+            ui.prepTimer.innerText = prepTime;
+            switchScreen('prep');
+
+            prepInterval = setInterval(() => {
+                prepTime--;
+                ui.prepTimer.innerText = prepTime;
+                if (prepTime <= 0) {
+                    clearInterval(prepInterval);
+                    startActiveGame();
+                }
+            }, 1000);
+        }
+
+        function startActiveGame() {
+            if (currentMode === 'timed') {
+                timeRemaining = 60;
+                ui.timer.innerText = timeRemaining;
+                ui.timer.style.opacity = '1';
+                ui.timer.classList.remove('text-red-500');
+                ui.timer.classList.add('text-yellow-400');
+                
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    ui.timer.innerText = timeRemaining;
+                    
+                    if (timeRemaining <= 10) {
+                        ui.timer.classList.remove('text-yellow-400');
+                        ui.timer.classList.add('text-red-500');
+                    }
+                    if (timeRemaining <= 0) endGame();
+                }, 1000);
+            } else {
+                // В режиме "без времени" скрываем таймер
+                ui.timer.style.opacity = '0';
+            }
+            
             nextWord();
             switchScreen('game');
         }
 
         function nextWord() {
             if (currentDeck.length === 0) {
-                endGame();
-                return;
+                // Бесконечный цикл, если слова кончились
+                currentDeck = shuffle([...activeDatabases[currentCategory]]);
             }
             ui.word.innerText = currentDeck.pop();
         }
 
         function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(prepInterval); 
             ui.score.innerText = score;
             switchScreen('result');
         }
 
-        function triggerFlash(colorClass) {
-            ui.gameWrapper.classList.remove('flash-green', 'flash-red');
-            void ui.gameWrapper.offsetWidth;
-            ui.gameWrapper.classList.add(colorClass);
-            setTimeout(() => ui.gameWrapper.classList.remove(colorClass), 300);
+        function showMenu() { switchScreen('menu'); }
+
+        function triggerFlash(flashClass) {
+            ui.flashEffect.classList.remove('flash-green', 'flash-red');
+            void ui.flashEffect.offsetWidth; // Принудительная перерисовка
+            ui.flashEffect.classList.add(flashClass);
         }
 
-        // Управление
-        ui.tapLeft.addEventListener('touchstart', (e) => { e.preventDefault(); triggerFlash('flash-red'); nextWord(); });
-        ui.tapLeft.addEventListener('mousedown', (e) => { e.preventDefault(); triggerFlash('flash-red'); nextWord(); });
+        const handlePass = (e) => { 
+            e.preventDefault(); 
+            triggerFlash('flash-red'); 
+            nextWord(); 
+        };
         
-        ui.tapRight.addEventListener('touchstart', (e) => { e.preventDefault(); score++; triggerFlash('flash-green'); nextWord(); });
-        ui.tapRight.addEventListener('mousedown', (e) => { e.preventDefault(); score++; triggerFlash('flash-green'); nextWord(); });
+        const handleScore = (e) => { 
+            e.preventDefault(); 
+            score++; 
+            triggerFlash('flash-green'); 
+            nextWord(); 
+        };
         
-        ui.btnFinish.addEventListener('touchstart', (e) => { e.stopPropagation(); endGame(); });
-        ui.btnFinish.addEventListener('mousedown', (e) => { e.stopPropagation(); endGame(); });
+        const handleFinish = (e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); // Важно: предотвращает срабатывание тапа под кнопкой
+            endGame(); 
+        };
+
+        // Биндим события. { passive: false } необходимо для корректной работы e.preventDefault()
+        ui.tapLeft.addEventListener('touchstart', handlePass, { passive: false });
+        ui.tapLeft.addEventListener('mousedown', handlePass);
+        
+        ui.tapRight.addEventListener('touchstart', handleScore, { passive: false });
+        ui.tapRight.addEventListener('mousedown', handleScore);
+
+        ui.btnFinish.addEventListener('touchstart', handleFinish, { passive: false });
+        ui.btnFinish.addEventListener('mousedown', handleFinish);
     </script>
 </body>
 </html>
