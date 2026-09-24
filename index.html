@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кто я?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { touch-action: none; user-select: none; -webkit-user-select: none; }
+        .screen { display: none; }
+        .screen.active { display: flex; }
+        .flash-green { animation: flashG 0.3s ease-out; }
+        .flash-red { animation: flashR 0.3s ease-out; }
+        @keyframes flashG { 0% { background-color: rgba(34, 197, 94, 0.5); } 100% { background-color: transparent; } }
+        @keyframes flashR { 0% { background-color: rgba(239, 68, 68, 0.5); } 100% { background-color: transparent; } }
+    </style>
+    
+    <!-- ПОДКЛЮЧАЕМ НАШУ БАЗУ СЛОВ -->
+    <script src="words.js"></script>
+</head>
+<body class="bg-gray-900 text-white h-screen w-screen overflow-hidden font-sans">
+    
+    <!-- Главное меню -->
+    <div id="menu-screen" class="screen active flex-col items-center justify-center h-full w-full p-6 text-center">
+        <h1 class="text-5xl font-black mb-8 text-blue-400">Кто я?</h1>
+        <div class="flex flex-col gap-4 w-full max-w-sm">
+            <button onclick="startGame('movies')" class="bg-purple-600 py-4 rounded-2xl text-xl font-bold">Кино и Сериалы</button>
+        </div>
+    </div>
+
+    <!-- Игровой экран -->
+    <div id="game-screen" class="screen flex-col h-full w-full relative transition-colors duration-200">
+        <!-- Кнопка завершить поверх всего -->
+        <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50 pointer-events-none">
+            <div id="timer" class="text-3xl font-black text-yellow-400 opacity-0"></div> <!-- Таймер скрыт -->
+            <button id="btn-finish" class="text-gray-400 text-lg font-bold bg-gray-800 px-4 py-2 rounded-full pointer-events-auto">Завершить</button>
+        </div>
+        
+        <div class="flex-1 flex items-center justify-center z-10 pointer-events-none p-4">
+            <h2 id="current-word" class="text-6xl md:text-8xl font-black text-center break-words leading-tight">Слово</h2>
+        </div>
+
+        <div class="absolute top-0 left-0 w-full h-full flex z-10">
+            <div id="tap-left" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-red-400 font-bold text-xl cursor-pointer">? Пропуск</div>
+            <div id="tap-right" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-green-400 font-bold text-xl cursor-pointer">Угадал ?</div>
+        </div>
+    </div>
+
+    <!-- Результаты -->
+    <div id="result-screen" class="screen flex-col items-center justify-center h-full w-full p-6 text-center">
+        <h2 class="text-4xl font-bold mb-4">Конец игры!</h2>
+        <p class="text-gray-400 mb-2">Угадано слов:</p>
+        <div class="text-8xl font-black text-green-400 mb-12" id="final-score">0</div>
+        <button onclick="location.reload()" class="bg-gray-700 py-4 px-8 rounded-2xl text-xl font-bold">В меню</button>
+    </div>
+
+    <script>
+        let currentDeck = [];
+        let score = 0;
+        
+        const screens = {
+            menu: document.getElementById('menu-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+        const ui = {
+            word: document.getElementById('current-word'),
+            score: document.getElementById('final-score'),
+            tapLeft: document.getElementById('tap-left'),
+            tapRight: document.getElementById('tap-right'),
+            gameWrapper: document.getElementById('game-screen'),
+            btnFinish: document.getElementById('btn-finish')
+        };
+
+        function switchScreen(name) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[name].classList.add('active');
+        }
+
+        function shuffle(array) {
+            let cur = array.length, rnd;
+            while (cur !== 0) {
+                rnd = Math.floor(Math.random() * cur);
+                cur--;
+                [array[cur], array[rnd]] = [array[rnd], array[cur]];
+            }
+            return array;
+        }
+
+        function startGame(category) {
+            // Берем слова из базы, которую сгенерировал Python
+            currentDeck = shuffle([...databases[category]]);
+            score = 0;
+            nextWord();
+            switchScreen('game');
+        }
+
+        function nextWord() {
+            if (currentDeck.length === 0) {
+                endGame();
+                return;
+            }
+            ui.word.innerText = currentDeck.pop();
+        }
+
+        function endGame() {
+            ui.score.innerText = score;
+            switchScreen('result');
+        }
+
+        function triggerFlash(colorClass) {
+            ui.gameWrapper.classList.remove('flash-green', 'flash-red');
+            void ui.gameWrapper.offsetWidth;
+            ui.gameWrapper.classList.add(colorClass);
+            setTimeout(() => ui.gameWrapper.classList.remove(colorClass), 300);
+        }
+
+        // Управление
+        ui.tapLeft.addEventListener('touchstart', (e) => { e.preventDefault(); triggerFlash('flash-red'); nextWord(); });
+        ui.tapLeft.addEventListener('mousedown', (e) => { e.preventDefault(); triggerFlash('flash-red'); nextWord(); });
+        
+        ui.tapRight.addEventListener('touchstart', (e) => { e.preventDefault(); score++; triggerFlash('flash-green'); nextWord(); });
+        ui.tapRight.addEventListener('mousedown', (e) => { e.preventDefault(); score++; triggerFlash('flash-green'); nextWord(); });
+        
+        ui.btnFinish.addEventListener('touchstart', (e) => { e.stopPropagation(); endGame(); });
+        ui.btnFinish.addEventListener('mousedown', (e) => { e.stopPropagation(); endGame(); });
+    </script>
+</body>
+</html>
