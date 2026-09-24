@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кто я?</title>
+    <title>РљС‚Рѕ СЏ?</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -15,43 +15,43 @@
         @keyframes flashR { 0% { background-color: rgba(239, 68, 68, 0.5); } 100% { background-color: transparent; } }
     </style>
     
-    <!-- ПОДКЛЮЧАЕМ НАШУ БАЗУ СЛОВ -->
+    <!-- РџРћР”РљР›Р®Р§РђР•Рњ РќРђРЁРЈ Р‘РђР—РЈ РЎР›РћР’ -->
     <script src="words.js"></script>
 </head>
 <body class="bg-gray-900 text-white h-screen w-screen overflow-hidden font-sans">
     
-    <!-- Главное меню -->
+    <!-- Р“Р»Р°РІРЅРѕРµ РјРµРЅСЋ -->
     <div id="menu-screen" class="screen active flex-col items-center justify-center h-full w-full p-6 text-center">
-        <h1 class="text-5xl font-black mb-8 text-blue-400">Кто я?</h1>
+        <h1 class="text-5xl font-black mb-8 text-blue-400">РљС‚Рѕ СЏ?</h1>
         <div class="flex flex-col gap-4 w-full max-w-sm">
-            <button onclick="startGame('movies')" class="bg-purple-600 py-4 rounded-2xl text-xl font-bold">Кино и Сериалы</button>
+            <button onclick="startGame('movies')" class="bg-purple-600 py-4 rounded-2xl text-xl font-bold">РљРёРЅРѕ Рё РЎРµСЂРёР°Р»С‹</button>
         </div>
     </div>
 
-    <!-- Игровой экран -->
+    <!-- РРіСЂРѕРІРѕР№ СЌРєСЂР°РЅ -->
     <div id="game-screen" class="screen flex-col h-full w-full relative transition-colors duration-200">
-        <!-- Кнопка завершить поверх всего -->
+        <!-- РљРЅРѕРїРєР° Р·Р°РІРµСЂС€РёС‚СЊ РїРѕРІРµСЂС… РІСЃРµРіРѕ -->
         <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50 pointer-events-none">
-            <div id="timer" class="text-3xl font-black text-yellow-400 opacity-0"></div> <!-- Таймер скрыт -->
-            <button id="btn-finish" class="text-gray-400 text-lg font-bold bg-gray-800 px-4 py-2 rounded-full pointer-events-auto">Завершить</button>
+            <div id="timer" class="text-3xl font-black text-yellow-400 opacity-0"></div> <!-- РўР°Р№РјРµСЂ СЃРєСЂС‹С‚ -->
+            <button id="btn-finish" class="text-gray-400 text-lg font-bold bg-gray-800 px-4 py-2 rounded-full pointer-events-auto">Р—Р°РІРµСЂС€РёС‚СЊ</button>
         </div>
         
         <div class="flex-1 flex items-center justify-center z-10 pointer-events-none p-4">
-            <h2 id="current-word" class="text-6xl md:text-8xl font-black text-center break-words leading-tight">Слово</h2>
+            <h2 id="current-word" class="text-6xl md:text-8xl font-black text-center break-words leading-tight">РЎР»РѕРІРѕ</h2>
         </div>
 
         <div class="absolute top-0 left-0 w-full h-full flex z-10">
-            <div id="tap-left" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-red-400 font-bold text-xl cursor-pointer">? Пропуск</div>
-            <div id="tap-right" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-green-400 font-bold text-xl cursor-pointer">Угадал ?</div>
+            <div id="tap-left" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-red-400 font-bold text-xl cursor-pointer">? РџСЂРѕРїСѓСЃРє</div>
+            <div id="tap-right" class="flex-1 h-full flex items-end pb-12 justify-center opacity-30 text-green-400 font-bold text-xl cursor-pointer">РЈРіР°РґР°Р» ?</div>
         </div>
     </div>
 
-    <!-- Результаты -->
+    <!-- Р РµР·СѓР»СЊС‚Р°С‚С‹ -->
     <div id="result-screen" class="screen flex-col items-center justify-center h-full w-full p-6 text-center">
-        <h2 class="text-4xl font-bold mb-4">Конец игры!</h2>
-        <p class="text-gray-400 mb-2">Угадано слов:</p>
+        <h2 class="text-4xl font-bold mb-4">РљРѕРЅРµС† РёРіСЂС‹!</h2>
+        <p class="text-gray-400 mb-2">РЈРіР°РґР°РЅРѕ СЃР»РѕРІ:</p>
         <div class="text-8xl font-black text-green-400 mb-12" id="final-score">0</div>
-        <button onclick="location.reload()" class="bg-gray-700 py-4 px-8 rounded-2xl text-xl font-bold">В меню</button>
+        <button onclick="location.reload()" class="bg-gray-700 py-4 px-8 rounded-2xl text-xl font-bold">Р’ РјРµРЅСЋ</button>
     </div>
 
     <script>
@@ -88,7 +88,7 @@
         }
 
         function startGame(category) {
-            // Берем слова из базы, которую сгенерировал Python
+            // Р‘РµСЂРµРј СЃР»РѕРІР° РёР· Р±Р°Р·С‹, РєРѕС‚РѕСЂСѓСЋ СЃРіРµРЅРµСЂРёСЂРѕРІР°Р» Python
             currentDeck = shuffle([...databases[category]]);
             score = 0;
             nextWord();
@@ -115,7 +115,7 @@
             setTimeout(() => ui.gameWrapper.classList.remove(colorClass), 300);
         }
 
-        // Управление
+        // РЈРїСЂР°РІР»РµРЅРёРµ
         ui.tapLeft.addEventListener('touchstart', (e) => { e.preventDefault(); triggerFlash('flash-red'); nextWord(); });
         ui.tapLeft.addEventListener('mousedown', (e) => { e.preventDefault(); triggerFlash('flash-red'); nextWord(); });
         
